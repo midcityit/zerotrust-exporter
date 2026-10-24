@@ -1,0 +1,53 @@
+name: Build and push zerotrust-exporter image
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - Dockerfile
+      - go.mod
+      - go.sum
+      - main.go
+      - internal/**
+      - .github/workflows/build.yml
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: [self-hosted, linux, homelab]
+    env:
+      ACR_NAME: acrmcit
+      IMAGE: zerotrust-exporter
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to Azure via the pod's existing workload identity
+        run: |
+          az login --service-principal \
+            -u "$AZURE_CLIENT_ID" \
+            --tenant "$AZURE_TENANT_ID" \
+            --federated-token "$(cat "$AZURE_FEDERATED_TOKEN_FILE")" \
+            --output none
+          az acr login --name "$ACR_NAME"
+
+      - name: Build and push (arm64 — matches the monitoring node pool; amd64
+          is skipped because cross-compiling this module's old goccy/go-json
+          transitive dep under QEMU segfaults the Go compiler)
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/arm64
+          push: true
+          tags: |
+            ${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE }}:latest
+            ${{ env.ACR_NAME }}.azurecr.io/${{ env.IMAGE }}:${{ github.sha }}

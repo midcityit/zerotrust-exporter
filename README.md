@@ -1,3 +1,14 @@
+> **MidCityIT fork.** Forked from [vinistoisr/zerotrust-exporter](https://github.com/vinistoisr/zerotrust-exporter)
+> (upstream last updated May 2024). This fork exists to ship a CVE-hardened image for mcit-k8s (Jira MCIT-352):
+> a multi-stage build on current Go (1.25) + x/net bump with a distroless, non-root runtime, reducing image
+> vulnerabilities from 24 CRITICAL / 563 HIGH to 0 CRITICAL / 12 HIGH (residuals are Go-1.26-only fixes).
+> It also adds panic recovery around each collector goroutine so transient Cloudflare API 5xx responses no
+> longer crash-loop the exporter (MCIT-344). The exported metric surface is unchanged from upstream, so the
+> existing Grafana `cf-zerotrust-availability` dashboard and amw-mcit alert rules keep working.
+> Built and pushed to `acrmcit.azurecr.io/zerotrust-exporter` by `.github/workflows/build.yml`.
+
+---
+
 # Zero Trust Exporter
 
 Zero Trust Exporter is a Prometheus exporter written in Go that collects and exposes metrics from Cloudflare's Zero Trust API. It is designed to provide visibility into devices, users, and tunnels managed by Cloudflare Zero Trust.
